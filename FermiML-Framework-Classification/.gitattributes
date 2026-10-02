@@ -1,0 +1,8 @@
+*.ipynb linguist-vendored
+
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Shell scripts must always use LF (sbatch rejects CRLF)
+*.sh text eol=lf
+

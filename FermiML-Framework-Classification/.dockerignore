@@ -1,0 +1,40 @@
+# Build context exclusions.
+#
+# The Dockerfile only copies *.toml, *.lock, src/, dist/ and docker_files/*.sh,
+# but the context sender walks everything not listed here. Two things go wrong
+# without this file: data/ ships the whole results tree and the ~700 MB SIF into
+# the build for nothing, and .pytest_cache has an unreadable ACL on Windows that
+# aborts the build outright ("error from sender: open .pytest_cache: Access is
+# denied").
+
+# Unreadable on Windows; nothing in the image needs it.
+.pytest_cache/
+
+# Experiment data, datasets and the built images themselves. Bind-mounted at
+# run time, never copied in.
+data/
+datasets/
+.snakemake/
+
+# Environments and VCS.
+.venv/
+venv/
+.git/
+.github/
+
+# Python build/cache artefacts. dist/ is deliberately NOT ignored: the
+# Dockerfile copies it.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Not used by the image.
+tests/
+notebooks/
+docs/
+.idea/
+.vscode/

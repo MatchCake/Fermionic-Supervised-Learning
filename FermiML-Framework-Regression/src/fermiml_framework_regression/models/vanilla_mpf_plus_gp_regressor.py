@@ -1,0 +1,107 @@
+from typing import Sequence
+
+import torch
+from matchcake.ml import LinearNIFKernel
+from numpy._typing import NDArray
+
+from ..multi_sector_plus_kernel import MultiSectorPlusCovarianceKernel
+from ..nif_covariance_kernel import NIFCovarianceKernel
+from ..vanilla_mpf_plus_covariance_kernel import VanillaMpfPlusCovarianceKernel
+from .nif_gp_regressor import NIFGPRegressor
+
+
+class VanillaMpfPlusGPRegressor(NIFGPRegressor):
+    r"""Multi-sector covariance-kernel GP with the trainable linear ansatz.
+
+    :class:`VanillaNIFGPRegressor` with the feature map of
+    :class:`~fermiml_framework_regression.multi_sector_plus_kernel.MultiSectorPlusCovarianceKernel`
+    substituted for the single-order one: the circuit starts from :math:`\ket{+}^{\otimes n}`
+    and the features span every order in ``sectors`` rather than the one order ``sector_m``.
+
+    ``sector_m`` is therefore not a parameter here; ``sectors`` replaces it.
+
+    :param n_qubits: Number of qubits. ``-1`` infers from input dimension.
+    :param sectors: Majorana orders to span, e.g. ``(1, 2, 3)``.
+    :param bias: Whether the :class:`~torch.nn.LazyLinear` encoder has a bias.
+    :param encoder_activation: Activation applied after the linear layer.
+    :param alpha: GP noise diagonal.
+    :param scale: Extra scale for :class:`SklearnNIFCovarianceKernel`.
+    :param x_scaling: Input transform applied before the embedding, one of
+        :data:`~fermiml_framework_regression.preprocessing.X_SCALINGS`.
+    """
+
+    MODEL_NAME = "VanillaMpfPlus"
+    DEFAULT_SECTORS = MultiSectorPlusCovarianceKernel.DEFAULT_SECTORS
+    DEFAULT_BIAS = LinearNIFKernel.DEFAULT_BIAS
+    DEFAULT_ENCODER_ACTIVATION = LinearNIFKernel.DEFAULT_ENCODER_ACTIVATION
+
+    def __init__(
+        self,
+        *,
+        n_qubits: int = NIFGPRegressor.DEFAULT_N_QUBITS,
+        sectors: Sequence[int] = DEFAULT_SECTORS,
+        bias: bool = DEFAULT_BIAS,
+        encoder_activation: str = DEFAULT_ENCODER_ACTIVATION,
+        alpha: float = NIFGPRegressor.DEFAULT_ALPHA,
+        scale: float = NIFGPRegressor.DEFAULT_SCALE,
+        x_scaling: str = NIFGPRegressor.DEFAULT_X_SCALING,
+        gram_batch_size: int = LinearNIFKernel.DEFAULT_GRAM_BATCH_SIZE,
+        random_state: int = LinearNIFKernel.DEFAULT_RANDOM_STATE,
+        alignment: bool = LinearNIFKernel.DEFAULT_ALIGNMENT,
+        alignment_iterations: int = LinearNIFKernel.DEFAULT_ALIGNMENT_ITERATIONS,
+        alignment_learning_rate: float = LinearNIFKernel.DEFAULT_ALIGNMENT_LEARNING_RATE,
+        alignment_early_stopping_patience: int = LinearNIFKernel.DEFAULT_ALIGNMENT_EARLY_STOPPING_PATIENCE,
+        alignment_early_stopping_threshold: float = LinearNIFKernel.DEFAULT_ALIGNMENT_EARLY_STOPPING_THRESHOLD,
+    ):
+        super().__init__(
+            n_qubits=n_qubits,
+            alpha=alpha,
+            scale=scale,
+            x_scaling=x_scaling,
+            gram_batch_size=gram_batch_size,
+            random_state=random_state,
+            alignment=alignment,
+            alignment_iterations=alignment_iterations,
+            alignment_learning_rate=alignment_learning_rate,
+            alignment_early_stopping_patience=alignment_early_stopping_patience,
+            alignment_early_stopping_threshold=alignment_early_stopping_threshold,
+        )
+        # Stored verbatim: sklearn's clone() compares constructor arguments by identity, and a
+        # YAML config hands this in as a list.
+        self.sectors = sectors
+        self.bias = bias
+        self.encoder_activation = encoder_activation
+
+    def _build_nif_kernel(self, n_qubits: int) -> NIFCovarianceKernel:
+        """Build a :class:`VanillaMpfPlusCovarianceKernel` for the given qubit count.
+
+        Seeded for the same reason :class:`VanillaNIFGPRegressor` is: the ansatz is a
+        :class:`torch.nn.LazyLinear` whose weights materialise from torch's global RNG on the
+        first forward pass, which ``random_state`` does not reach.
+
+        :param n_qubits: Resolved number of qubits.
+        :return: Unfitted :class:`VanillaMpfPlusCovarianceKernel` instance.
+        """
+        torch.manual_seed(self.random_state)
+        return VanillaMpfPlusCovarianceKernel(
+            n_qubits=n_qubits,
+            sectors=self.sectors,
+            bias=self.bias,
+            encoder_activation=self.encoder_activation,
+            gram_batch_size=self.gram_batch_size,
+            random_state=self.random_state,
+            alignment=self.alignment,
+            alignment_iterations=self.alignment_iterations,
+            alignment_learning_rate=self.alignment_learning_rate,
+            alignment_early_stopping_patience=self.alignment_early_stopping_patience,
+            alignment_early_stopping_threshold=self.alignment_early_stopping_threshold,
+        )
+
+    def fit(self, x_train: NDArray, y_train: NDArray) -> "VanillaMpfPlusGPRegressor":
+        """Fit the regressor on training data.
+
+        :param x_train: Training inputs of shape ``(n_samples, n_features)``.
+        :param y_train: Training targets of shape ``(n_samples,)``.
+        :return: The fitted regressor.
+        """
+        return super().fit(x_train, y_train)  # type: ignore[return-value]

@@ -1,0 +1,243 @@
+[project]
+name = "FermiML-Framework-Regression"
+version = "0.0.6"
+description = ""
+authors = [{name = "Jeremie Gince", email = "Jeremie.Gicne@usherbrooke.ca"},]
+requires-python = ">=3.12,<3.13"
+license = { file = "LICENSE" }
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy (>=1.23,<3.0.0)",
+    "setuptools>=65.5.1",
+    "pythonbasictools>=0.0.4",
+    "psutil>=5.9.6",
+    "importlib-metadata (>=8.7.0,<9.0.0)",
+    "torch (>=2.6.0,<3.0.0)",
+    "torchvision (>=0.21.0)",
+    "torchaudio (>=2.6.0)",
+    "matchcake",
+    # Declared explicitly although it reaches us through matchcake: [tool.uv.sources]
+    # only binds to the project's own dependencies, and this is what pins it to the
+    # git dev branch instead of the stale 0.0.0 on PyPI.
+    "torchpfaffian",
+    "torcheval (>=0.0.7)",
+    "dataclass-click>=1.0.4",
+    "click>=8.2.1",
+    "pyyaml>=6.0.3",
+    "dataclass-wizard>=0.35.1",
+    "aiohttp>=3.13.5",
+    "fsspec>=2026.3.0",
+    "h5py>=3.16.0",
+    "requests>=2.32.3",
+    # Raised from >=0.44.1,<0.45.0 when matchcake moved to its dev branch, which
+    # requires >=0.45.0. The upper bound is dropped rather than moved to <0.46 so the
+    # pin follows matchcake instead of fighting it.
+    "pennylane>=0.45.0",
+    "scikit-learn>=1.4.0",
+    "tqdm>=4.60.0",
+    "pandas-stubs>=3.0.0.260204",
+    "nbconvert>=7.17.1",
+]
+dynamic = ["readme"]
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=6.1.1,<7",
+    "pytest-json-report>=1.5.0,<2",
+    "pytest>=8.3.5,<9",
+    "docutils>=0.18.1,<0.20",
+    "mypy>=1.15.0,<2",
+    "ruff>=0.14.0,<0.15",
+    "nbmake>=1.5.5,<2",
+    "wheel>=0.45.1,<0.46",
+    "build>=1.2.2.post1,<2",
+    "twine>=6.1.0,<7",
+    "pytest-xdist>=3.7.0,<4",
+    "pytest-timeout>=2.4.0",
+    "pandas-stubs>=3.0.0.260204",
+    "types-requests>=2.32.4.20260107",
+    # The config layer and the test fixtures round-trip YAML, and CI runs mypy over tests too.
+    "types-PyYAML>=6.0.12",
+    "pre-commit>=4.6.0",
+    "scipy-stubs>=1.17.1.4",
+    "snakemake>=9.16.3",
+    "snakemake-executor-plugin-slurm>=2.6.1",
+]
+docs = [
+    # docs/paper: the figure scripts in docs/paper/figures_src/. These resolve today only as
+    # transitive dependencies of pennylane, so a bump there would break figure generation
+    # without touching anything that looks related. Declared explicitly instead.
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "pandas>=2.0",
+    "scipy>=1.11",
+    "sphinx>=6.2.1,<6.3.0",
+    "docutils>=0.18.1,<0.20",
+    "sphinx-rtd-theme>=3.0.2,<4",
+    "sphinxcontrib-bibtex>=2.5.0,<2.6.0",
+    "sphinx-theme~=1.0",
+    "groundwork-sphinx-theme>=1.1.1,<2",
+    "karma-sphinx-theme>=0.0.8,<0.0.9",
+    "sphinx-mdinclude>=0.6.2,<0.7",
+]
+
+[build-system]
+requires = [
+    "setuptools>=57.0.0",
+    "wheel>=0.45.1,<0.46",
+    "build>=1.2.2.post1,<2",
+    "twine>=6.1.0,<7",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+package = true
+default-groups = [
+    "dev",
+    "docs",
+]
+conflicts = [
+  [
+    { extra = "cpu" },
+    { extra = "cu128" },
+    { extra = "cu130" },
+  ],
+]
+required-environments = [
+    "sys_platform == 'linux' and platform_machine == 'aarch64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+
+[project.optional-dependencies]
+cpu = [
+  "torch",
+  "torchvision",
+]
+cu128 = [
+  "torch",
+  "torchvision",
+]
+cu130 = [
+  "torch",
+  "torchvision",
+]
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", extra = "cpu" },
+  { index = "pytorch-cu128", extra = "cu128" },
+  { index = "pytorch-cu130", extra = "cu130" },
+]
+torchvision = [
+  { index = "pytorch-cpu", extra = "cpu" },
+  { index = "pytorch-cu128", extra = "cu128" },
+  { index = "pytorch-cu130", extra = "cu130" },
+]
+matchcake = { git = "https://github.com/MatchCake/MatchCake", rev = "dev" }
+torchpfaffian = { git = "https://github.com/MatchCake/TorchPfaffian", rev = "dev" }
+pythonbasictools = { git = "https://github.com/JeremieGince/PythonBasicTools", rev = "dev" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[tool.setuptools.dynamic]
+readme = {file = "README.md", content-type = "text/markdown"}
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  ".", "src",
+]
+testpaths = ["tests"]
+addopts = [
+  "-n=auto",
+  "--dist=loadscope",
+  "--cov=src",
+  "--cov-branch",
+  "--cov-report=xml:tests/.tmp/coverage.xml",
+  "--cov-report=term-missing",
+  "--durations=10",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    'def __repr__',
+    'if self.debug:',
+    'if settings.DEBUG',
+    'raise AssertionError',
+    'raise NotImplementedError',
+    'if __name__ == .__main__.:',
+    'if TYPE_CHECKING:',
+    '@(abc\.)?abstractmethod',
+    '\A(?s:.*# pragma: file - no cover.*)\Z',
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "pythonbasictools",
+    "torchvision.*",
+    "pennylane.*",
+    "matchcake.*",
+    "tqdm.*",
+    "sklearn.*",
+    "h5py.*",
+]
+ignore_missing_imports = true
+
+# ruff replaces black + isort. The formatter is black-compatible, and the `I` lint rules
+# are the isort `profile = "black"` behaviour, so the two settings that used to live in
+# [tool.black] and [tool.isort] collapse into this block.
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+# E/W pycodestyle, F pyflakes, I isort. E501 is off because the formatter already owns
+# line length and cannot split a long string or URL, so leaving it on only produces
+# warnings nothing can act on.
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# The package __init__ installs warning filters that have to be in place before the
+# submodules are imported, so its imports genuinely cannot sit at the top of the file.
+"src/fermiml_framework_regression/__init__.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["fermiml_framework_regression"]
+# docs/paper/figures_src/common.py is imported by file location by its sibling figure scripts
+# (make_figures.py puts that directory on sys.path), so it is a local module rather than a
+# third-party package.
+known-local-folder = ["common"]
+
+[project.scripts]
+compute_ith = "fermiml_framework_regression.experiments.clients.compute_ith_cli:compute_ith_cli"
+compute_n = "fermiml_framework_regression.experiments.clients.compute_n_cli:compute_n_cli"
+generate_hashes = "fermiml_framework_regression.experiments.clients.generate_hashes_cli:generate_hashes_cli"
+prepare_datasets = "fermiml_framework_regression.experiments.clients.prepare_datasets_cli:prepare_datasets_cli"

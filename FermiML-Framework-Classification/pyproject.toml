@@ -1,0 +1,212 @@
+[project]
+name = "FermiML-Framework-Classification"
+version = "0.0.2"
+description = ""
+authors = [{name = "Jeremie Gince", email = "Jeremie.Gicne@usherbrooke.ca"},]
+requires-python = ">=3.12,<3.13"
+license = { file = "LICENSE" }
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy (>=1.23,<3.0.0)",
+    "setuptools>=65.5.1",
+    "pythonbasictools>=0.0.4",
+    "psutil>=5.9.6",
+    "threadpoolctl>=3.5.0",
+    "importlib-metadata (>=8.7.0,<9.0.0)",
+    "torch (>=2.6.0,<3.0.0)",
+    "torchvision (>=0.21.0)",
+    "torchaudio (>=2.6.0)",
+    "lightning (>=2.5.2,<3.0.0)",
+    "tensorboardx (>=2.6.4,<3.0.0)",
+    "tensorboard (>=2.19.0,<3.0.0)",
+    "ax-platform[mysql] (>=1.0.0,<2.0.0)",
+    "matchcake",
+    "matchcake-opt",
+    "torcheval (>=0.0.7)",
+    "dataclass-click>=1.0.4",
+    "click>=8.2.1",
+    "pyyaml>=6.0.3",
+    "dataclass-wizard>=0.35.1",
+    "aiohttp>=3.13.5",
+    "fsspec>=2026.3.0",
+    "h5py>=3.16.0",
+    "requests>=2.32.3",
+    "nbconvert>=7.17.1",
+]
+dynamic = ["readme"]
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=6.1.1,<7",
+    "pytest-json-report>=1.5.0,<2",
+    "pytest>=8.3.5,<9",
+    "docutils>=0.18.1,<0.20",
+    "mypy>=1.15.0,<2",
+    "black>=25.1.0,<26",
+    "nbmake>=1.5.5,<2",
+    "wheel>=0.45.1,<0.46",
+    "build>=1.2.2.post1,<2",
+    "twine>=6.1.0,<7",
+    "pytest-xdist>=3.7.0,<4",
+    "isort>=6.0.1,<7",
+    "pytest-timeout>=2.4.0",
+    "pandas-stubs>=3.0.0.260204",
+    "types-requests>=2.32.4.20260107",
+    "pre-commit>=4.6.0",
+    "scipy-stubs>=1.17.1.4",
+    "snakemake>=9.16.3",
+    "snakemake-executor-plugin-slurm>=2.6.1",
+]
+docs = [
+    "sphinx>=6.2.1,<6.3.0",
+    "docutils>=0.18.1,<0.20",
+    "sphinx-rtd-theme>=3.0.2,<4",
+    "sphinxcontrib-bibtex>=2.5.0,<2.6.0",
+    "sphinx-theme~=1.0",
+    "groundwork-sphinx-theme>=1.1.1,<2",
+    "karma-sphinx-theme>=0.0.8,<0.0.9",
+    "sphinx-mdinclude>=0.6.2,<0.7",
+]
+
+[build-system]
+requires = [
+    "setuptools>=57.0.0",
+    "wheel>=0.45.1,<0.46",
+    "build>=1.2.2.post1,<2",
+    "twine>=6.1.0,<7",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
+package = true
+default-groups = [
+    "dev",
+    "docs",
+]
+conflicts = [
+  [
+    { extra = "cpu" },
+    { extra = "cu128" },
+    { extra = "cu130" },
+  ],
+]
+required-environments = [
+    "sys_platform == 'linux' and platform_machine == 'aarch64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+
+[project.optional-dependencies]
+cpu = [
+  "torch",
+  "torchvision",
+]
+cu128 = [
+  "torch",
+  "torchvision",
+]
+cu130 = [
+  "torch",
+  "torchvision",
+]
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", extra = "cpu" },
+  { index = "pytorch-cu128", extra = "cu128" },
+  { index = "pytorch-cu130", extra = "cu130" },
+]
+torchvision = [
+  { index = "pytorch-cpu", extra = "cpu" },
+  { index = "pytorch-cu128", extra = "cu128" },
+  { index = "pytorch-cu130", extra = "cu130" },
+]
+matchcake-opt = { git = "https://github.com/MatchCake/MatchCake-Opt", rev = "dev" }
+pythonbasictools = { git = "https://github.com/JeremieGince/PythonBasicTools", rev = "dev" }
+matchcake = { git = "https://github.com/MatchCake/MatchCake", rev = "0.2.3" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[tool.setuptools.dynamic]
+readme = {file = "README.md", content-type = "text/markdown"}
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  ".", "src",
+]
+testpaths = ["tests"]
+addopts = [
+  "-n=auto",
+  "--dist=loadscope",
+  "--cov=src",
+  "--cov-branch",
+  "--cov-report=xml:tests/.tmp/coverage.xml",
+  "--cov-report=term-missing",
+  "--durations=10",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    'def __repr__',
+    'if self.debug:',
+    'if settings.DEBUG',
+    'raise AssertionError',
+    'raise NotImplementedError',
+    'if __name__ == .__main__.:',
+    'if TYPE_CHECKING:',
+    '@(abc\.)?abstractmethod',
+    '\A(?s:.*# pragma: file - no cover.*)\Z',
+]
+
+[[tool.mypy.overrides]]
+module = [
+    "pythonbasictools",
+    "torchvision.*",
+    "pennylane.*",
+    "matchcake.*",
+    "tqdm.*",
+    "sklearn.*",
+    "h5py.*",
+    "threadpoolctl",
+]
+ignore_missing_imports = true
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+
+[project.scripts]
+single_exp = "fermiml_framework_classification.experiments.clients.single_experiment_cli:single_experiment_cli"
+compute_ith = "fermiml_framework_classification.experiments.clients.compute_ith_cli:compute_ith_cli"
+compute_n = "fermiml_framework_classification.experiments.clients.compute_n_cli:compute_n_cli"
+generate_hashes = "fermiml_framework_classification.experiments.clients.generate_hashes_cli:generate_hashes_cli"
+

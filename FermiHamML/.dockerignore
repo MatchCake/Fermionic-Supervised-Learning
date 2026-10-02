@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+
+# Testing
+.pytest_cache/
+.coverage
+.mypy_cache/
+
+# IDE
+.idea/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+docs/
+sphinx/
+
+# Temporary files
+.tmp/
+
+# Data and experiments
+data/
+notebooks/
+
+# Workflow
+workflow/
+.snakemake/
+
+# Images source files
+images/*.drawio
+images/*.bkp
+
+# Docker
+Dockerfile*
+.dockerignore
+docker_files/*.py
+
+# GitHub
+.github/
