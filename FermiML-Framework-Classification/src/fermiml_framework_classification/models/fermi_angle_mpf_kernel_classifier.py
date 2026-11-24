@@ -1,6 +1,6 @@
 from functools import cached_property
 from itertools import combinations
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import pennylane as qml
@@ -11,6 +11,7 @@ from matchcake.typing import TensorLike
 from matchcake.utils import sector_pfaffian_features
 from matchcake.utils.torch_utils import to_numpy, to_tensor
 
+from .mpf_normalization import kernel_prefactor
 from .nif_kernel_classifier import NIFKernelClassifier
 
 
@@ -38,7 +39,7 @@ class FermiAngleMpfKernelClassifier(NIFKernelClassifier):
     :param svm_c: Regularisation parameter of the SVC.
     :param sector_m: Even Majorana sector order :math:`m`. Must satisfy
         ``2 <= sector_m <= 2 * n_qubits - 2``. Defaults to 2.
-    :param observable_norm: Multiplicative scale :math:`c`. Defaults to 1.0.
+    :param observable_norm: Multiplicative scale :math:`c`, or ``"2^n"`` for :math:`c = 2^n`. Defaults to 1.0.
     :param n_qubits: Number of qubits. Pass -1 (default) to infer from the
         feature dimension at fit time.
     :param rotations: Comma-separated rotation letters for the angle embedding,
@@ -59,7 +60,7 @@ class FermiAngleMpfKernelClassifier(NIFKernelClassifier):
         random_state: int = NIFKernelClassifier.DEFAULT_RANDOM_STATE,
         svm_c: float = NIFKernelClassifier.DEFAULT_SVM_C,
         sector_m: int = DEFAULT_SECTOR_M,
-        observable_norm: float = DEFAULT_OBSERVABLE_NORM,
+        observable_norm: Union[float, str] = DEFAULT_OBSERVABLE_NORM,
         n_qubits: int = -1,
         rotations: str = DEFAULT_ROTATIONS,
     ):
@@ -80,6 +81,7 @@ class FermiAngleMpfKernelClassifier(NIFKernelClassifier):
                 f"sector_m={sector_m} exceeds 2n-2={2 * self.n_qubits - 2}; " f"no non-trivial m-subsets exist."
             )
         self._sector_m = sector_m
+        kernel_prefactor(observable_norm, 0)  # rejects an unknown norm before any fit
         self.observable_norm = observable_norm
         self.rotations = rotations
 
@@ -132,7 +134,7 @@ class FermiAngleMpfKernelClassifier(NIFKernelClassifier):
             v1 = v0
         else:
             v1 = self.feature_map(x1)
-        prefactor = self.observable_norm / (2**self.n_qubits)
+        prefactor = kernel_prefactor(self.observable_norm, self.n_qubits)
         gram = prefactor * torch.einsum("if,jf->ij", v0, v1)
         return gram.to(dtype=self.R_DTYPE)
 

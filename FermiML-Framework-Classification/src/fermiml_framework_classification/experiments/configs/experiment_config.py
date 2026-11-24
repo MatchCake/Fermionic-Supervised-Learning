@@ -68,6 +68,10 @@ class ExperimentConfig(YAMLWizard):
         """
         hyperparameters = model_config.hyperparameters
         n_qubits = hyperparameters.get("n_qubits")
+        if model_config.name.lower() in ("pqc", "fpqc"):
+            if n_qubits == "double":  # one wire pair per feature, a layout only the matchgate model has
+                return model_config.name.lower() == "fpqc"
+            return cls._pqc_qubit_count_is_distinct(n_qubits, dataset_config)
         sectors = hyperparameters.get("sectors")
         if sectors is None:
             sector_m = hyperparameters.get("sector_m")
@@ -91,6 +95,30 @@ class ExperimentConfig(YAMLWizard):
 
         max_terms = FermiVanillaMpfKernelClassifier.MAX_PFAFFIAN_FEATURE_TERMS
         return sum(comb(2 * n_qubits, order) for order in sectors) <= max_terms
+
+    @classmethod
+    def _pqc_qubit_count_is_distinct(cls, n_qubits: Optional[Union[int, str]], dataset_config: DatasetConfig) -> bool:
+        """Return whether a PQC or fPQC qubit setting gives a circuit that a larger setting does not already give.
+
+        :param n_qubits: The requested qubit setting.
+        :param dataset_config: The dataset configuration it would run on.
+        :return: ``True`` if the config should be submitted, ``False`` otherwise.
+        :rtype: bool
+        """
+        if n_qubits is None or (not isinstance(n_qubits, str) and n_qubits < 0) or n_qubits == "full":
+            return True
+        n_features = cls._dataset_feature_dimension(dataset_config)
+        if n_features is None:  # unknown dataset: leave the decision to the job itself
+            return True
+        from ...models.pqc_encoding import PQCEncoding
+
+        resolved = PQCEncoding.resolve_n_qubits(n_qubits, n_features)
+        if not isinstance(n_qubits, str):
+            return resolved < PQCEncoding.resolve_n_qubits("full", n_features)
+        larger_rules = [
+            rule for rule, divisor in PQCEncoding.QUBIT_RULES.items() if divisor < PQCEncoding.QUBIT_RULES[n_qubits]
+        ]
+        return all(PQCEncoding.resolve_n_qubits(rule, n_features) != resolved for rule in larger_rules)
 
     def to_single_experiment_configs(self) -> List[SingleExperimentConfig]:
         single_experiment_configs = []

@@ -1,10 +1,9 @@
-from functools import cached_property, partial
+from functools import cached_property
 from typing import Optional, Union
 
 import numpy as np
 import pennylane as qml
 import torch
-from matchcake.ml.kernels.gram_matrix import GramMatrix
 from matchcake.ml.kernels.kernel import Kernel
 from matchcake.typing import TensorLike
 from matchcake.utils.torch_utils import to_numpy, to_tensor
@@ -12,7 +11,6 @@ from numpy._typing import NDArray
 from sklearn.base import ClassifierMixin
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.svm import SVC
-from tqdm import tqdm
 
 
 class SVSKernel(Kernel, ClassifierMixin):
@@ -162,40 +160,23 @@ class SVSKernel(Kernel, ClassifierMixin):
         """
         raise NotImplementedError
 
-    def compute_similarities(self, x0: torch.Tensor, x1: torch.Tensor, **kwargs):
-        """
-        Computes the similarity matrix between tensors `x0` and `x1`. The function evaluates
-        quantum computational circuits for pairs of instances from `x0` and `x1` to compute a
-        Gram matrix that represents the pairwise similarities. These values are then processed
-        and provided as a tensor representation of the similarity matrix.
+    def compute_similarities(self, x0: torch.Tensor, x1: torch.Tensor, **kwargs) -> torch.Tensor:
+        """Compute the fidelity kernel between ``x0`` and ``x1`` from the overlaps of their state vectors.
 
-        :param x0: The first tensor containing a batch of samples for similarity computation.
-        :type x0: torch.Tensor
-        :param x1: The second tensor containing another batch of samples for similarity computation.
-        :type x1: torch.Tensor
-        :return: A tensor representing the computed similarity matrix.
+        :param x0: Scaled inputs of shape ``(n_samples_0, n_features)``.
+        :param x1: Scaled inputs of shape ``(n_samples_1, n_features)``.
+        :return: The kernel, of shape ``(n_samples_0, n_samples_1)``.
         :rtype: torch.Tensor
         """
-        gram = GramMatrix((x0.shape[0], x1.shape[0]), requires_grad=self.training)
-        p_bar = tqdm(
-            total=int(np.prod(gram.shape)),
-            desc="Computing Gram matrix",
-            unit="element",
-            disable=not kwargs.get("verbose", False),
-        )
-        p_bar.set_postfix_str("Compiling x0 circuits ...")
-        sv0 = self._x_to_sv(x0)
-        p_bar.set_postfix_str("Compiling x1 circuits ...")
-        if kwargs.get("x1_train", False):
-            sv1 = self.sv_train
-        else:
-            sv1 = self._x_to_sv(x1)
-        p_bar.set_postfix_str("Evaluating Gram matrix ...")
-        _func = partial(self._compute_similarities_func, sv0=sv0, sv1=sv1, p_bar=p_bar)
-        gram.apply_(_func, batch_size=self.gram_batch_size, symmetrize=True)
-        p_bar.set_postfix_str("Done.")
-        p_bar.close()
-        return gram.to_tensor().to(dtype=self.R_DTYPE)
+        # Simulated in the order the previous GramMatrix path used, and never reused: a seeded sampling device (QKS)
+        # draws from one stream, so any change in the number or order of simulations changes its results.
+        states0 = self._x_to_sv(x0)
+        states1 = self.sv_train if kwargs.get("x1_train", False) else self._x_to_sv(x1)
+        kernel = (torch.abs(states0.conj() @ states1.T) ** 2).to(dtype=self.R_DTYPE)  # (n_samples_0, n_samples_1)
+        if x0.shape == x1.shape and torch.equal(x0, x1):
+            kernel = (kernel + kernel.T) / 2
+            kernel.fill_diagonal_(1.0)
+        return kernel
 
     def _x_to_sv(self, x: TensorLike) -> TensorLike:
         """
@@ -216,15 +197,6 @@ class SVSKernel(Kernel, ClassifierMixin):
             sv_list.append(new_sv)
         stacked_sv = qml.math.concatenate(sv_list, axis=0).reshape(x.shape[0], 2**self.n_qubits)
         return stacked_sv
-
-    def _compute_similarities_func(self, indices, sv0, sv1, p_bar):
-        b_sv0, b_sv1 = sv0[indices[:, 0]], sv1[indices[:, 1]]
-        b_sv0 = to_tensor(b_sv0, dtype=self.C_DTYPE, device=self.device)  # type: ignore
-        b_sv1 = to_tensor(b_sv1, dtype=self.C_DTYPE, device=self.device)  # type: ignore
-        brackets = qml.math.einsum("...i,...i->...", b_sv1.conj(), b_sv0)
-        expval = qml.math.real(qml.math.abs(brackets) ** 2)
-        p_bar.update(len(indices))
-        return expval
 
     @property
     def wires(self):

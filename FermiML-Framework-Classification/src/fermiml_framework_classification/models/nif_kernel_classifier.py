@@ -87,6 +87,7 @@ class NIFKernelClassifier(NIFKernel, ClassifierMixin):
 
     def fit(self, x_train: TensorLike, y_train: Optional[TensorLike] = None):
         x_train = to_numpy(x_train)
+        self.__dict__.pop("sptms_train", None)  # cached from a previous fit
         self.scaler.fit(x_train)
         super().fit(x_train, y_train)
         self.svm.C = self.svm_c
@@ -113,7 +114,6 @@ class NIFKernelClassifier(NIFKernel, ClassifierMixin):
         """
         self.eval()
         with torch.no_grad():
-            x = self.scaler.transform(x)
             x = to_tensor(x, dtype=self.R_DTYPE, device=self.device)
             x = self.transform(x)
             x = to_numpy(x)
@@ -138,11 +138,39 @@ class NIFKernelClassifier(NIFKernel, ClassifierMixin):
         """
         self.eval()
         with torch.no_grad():
-            x = self.scaler.transform(x)
             x = to_tensor(x, dtype=self.R_DTYPE, device=self.device)
             x = self.transform(x)
             x = to_numpy(x)
             return self.svm.predict_proba(x)
+
+    def compute_similarities(self, x0: torch.Tensor, x1: torch.Tensor, **kwargs) -> torch.Tensor:
+        """Compute the fidelity kernel between ``x0`` and ``x1``.
+
+        :param x0: Scaled inputs of shape ``(n_samples_0, n_features)``.
+        :param x1: Scaled inputs of shape ``(n_samples_1, n_features)``.
+        :return: The kernel, of shape ``(n_samples_0, n_samples_1)``.
+        :rtype: torch.Tensor
+        """
+        if x0.shape == x1.shape and torch.equal(x0, x1):
+            return super().compute_similarities(x0, x1, **kwargs)
+        sptm0 = self._x_to_sptm(x0)
+        sptm1 = self.sptms_train if kwargs.get("x1_train", False) else self._x_to_sptm(x1)
+        n_rows, n_cols = int(sptm0.shape[0]), int(sptm1.shape[0])
+        row_indices, col_indices = np.meshgrid(np.arange(n_rows), np.arange(n_cols), indexing="ij")
+        all_indices = np.stack([row_indices.reshape(-1), col_indices.reshape(-1)], axis=1)
+        p_bar = tqdm(
+            total=len(all_indices),
+            desc="Computing kernel",
+            unit="element",
+            disable=not kwargs.get("verbose", False),
+        )
+        values = []
+        for start in range(0, len(all_indices), self.gram_batch_size):
+            batch_indices = all_indices[start : start + self.gram_batch_size]
+            batch_values = self._compute_similarities_func(batch_indices, sptm0, sptm1, p_bar)
+            values.append(torch.real(to_tensor(batch_values, device=self.device)).reshape(-1))
+        p_bar.close()
+        return torch.cat(values).reshape(n_rows, n_cols).to(dtype=self.R_DTYPE)
 
     @cached_property
     def sptms_train(self) -> TensorLike:

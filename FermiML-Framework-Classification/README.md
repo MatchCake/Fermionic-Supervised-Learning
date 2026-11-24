@@ -111,7 +111,7 @@ uv add --dev snakemake snakemake-executor-plugin-slurm
 
 ### 1. Get the experiment config
 
-The experiment configuration is at `data/configs/config.yaml`.
+The experiment configuration is at `data/configs/config_20splits.yaml`.
 Make sure this file is present on the cluster (it is tracked in the repository,
 so a `git pull` is sufficient).
 

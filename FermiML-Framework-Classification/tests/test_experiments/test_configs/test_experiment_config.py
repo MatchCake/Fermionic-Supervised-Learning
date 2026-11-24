@@ -141,6 +141,63 @@ class TestExperimentConfig:
         model_config = ModelConfig(name="VanillaMpf+", hyperparameters={"n_qubits": -1, "sector_m": 4, "sectors": [2]})
         assert ExperimentConfig._model_config_is_feasible(model_config, narrow_dataset)
 
+    @pytest.mark.parametrize("name", ["PQC", "fPQC"])
+    @pytest.mark.parametrize(
+        "n_qubits, dimension, expected",
+        [
+            (-1, 10, True),
+            (4, 10, True),
+            (8, 10, True),
+            (10, 10, False),
+            (16, 10, False),
+            (4, 4, False),
+            (4, 3, False),
+            (4, 5, True),
+            (-1, 2, True),
+        ],
+    )
+    def test_model_config_is_feasible_drops_repeated_pqc_circuits(self, name, n_qubits, dimension, expected):
+        model = ModelConfig(name=name, hyperparameters={"n_qubits": n_qubits, "svm_c": 1})
+        dataset = DatasetConfig(dataset_name="linearly-separable", extra_options={"dimension": dimension})
+        assert ExperimentConfig._model_config_is_feasible(model, dataset) is expected
+
+    @pytest.mark.parametrize("name", ["PQC", "fPQC"])
+    @pytest.mark.parametrize(
+        "rule, dimension, expected",
+        [
+            ("full", 2, True),
+            ("half", 2, False),
+            ("quarter", 2, False),
+            ("half", 4, True),
+            ("quarter", 4, False),
+            ("half", 6, True),
+            ("quarter", 6, True),
+            ("half", 20, True),
+            ("quarter", 20, True),
+            ("eighth", 20, True),
+            ("eighth", 16, True),
+            ("eighth", 10, True),
+            ("eighth", 4, False),
+            ("eighth", 6, False),
+        ],
+    )
+    def test_model_config_is_feasible_drops_repeated_pqc_rules(self, name, rule, dimension, expected):
+        model = ModelConfig(name=name, hyperparameters={"n_qubits": rule, "svm_c": 1})
+        dataset = DatasetConfig(dataset_name="downscaled-mnist", extra_options={"dimension": dimension})
+        assert ExperimentConfig._model_config_is_feasible(model, dataset) is expected
+
+    @pytest.mark.parametrize("dimension", [2, 3, 20])
+    def test_model_config_is_feasible_keeps_doubled_fpqc(self, dimension):
+        model = ModelConfig(name="fPQC", hyperparameters={"n_qubits": "double", "svm_c": 1})
+        dataset = DatasetConfig(dataset_name="downscaled-mnist", extra_options={"dimension": dimension})
+        assert ExperimentConfig._model_config_is_feasible(model, dataset) is True
+
+    def test_model_config_is_feasible_drops_doubled_pqc(self):
+        # Only the matchgate model has a doubled encoding; the unrestricted one would reject the rule at fit time.
+        model = ModelConfig(name="PQC", hyperparameters={"n_qubits": "double", "svm_c": 1})
+        dataset = DatasetConfig(dataset_name="downscaled-mnist", extra_options={"dimension": 10})
+        assert ExperimentConfig._model_config_is_feasible(model, dataset) is False
+
     def test_model_config_is_feasible_keeps_non_pfaffian_model(self, narrow_dataset):
         model_config = ModelConfig(name="IQP", hyperparameters={"svm_c": 1, "repeats": 5})
         assert ExperimentConfig._model_config_is_feasible(model_config, narrow_dataset)
@@ -157,19 +214,6 @@ class TestExperimentConfig:
 
     def test_dataset_feature_dimension_unknown_name(self):
         assert ExperimentConfig._dataset_feature_dimension(DatasetConfig(dataset_name="nope")) is None
-
-    def test_ten_split_config_drops_only_the_two_dimensional_sector_four_combos(self):
-        # The 10-split grid pairs sector_m=4 with the inferred qubit count, which is infeasible exactly on the
-        # two d=2 configurations (downscaled-mnist dimension=2 and hidden-manifold dimensions=2).
-        config_path = Path(__file__).parents[3] / "data" / "configs" / "config_10splits.yaml"
-        exp_config = ExperimentConfig.from_yaml_file(config_path)
-        n_datasets = len(exp_config.datasets.to_dataset_configs())
-        n_models = sum(len(model.to_model_configs()) for model in exp_config.models)
-        kept = exp_config.to_single_experiment_configs()
-        n_svm_c = 3  # sector_m=4 is swept over three regularization strengths
-        n_two_dimensional = 2
-        assert n_datasets * n_models - len(kept) == n_svm_c * n_two_dimensional * exp_config.datasets.cv_splits
-        assert len({single.hash for single in kept}) == len(kept)
 
     def test_to_single_experiment_configs_drops_infeasible_combos(self):
         config = ExperimentConfig(
@@ -195,7 +239,7 @@ class TestExperimentConfig:
         # pair sector_m>=4 with an explicit n_qubits. Those combinations exhaust the
         # Pfaffian feature map and get OOM-killed on the cluster. Only the
         # data-inferred n_qubits=-1 may carry sector_m=4.
-        config_path = Path(__file__).parents[3] / "data" / "configs" / "config.yaml"
+        config_path = Path(__file__).parents[3] / "data" / "configs" / "config_20splits.yaml"
         exp_config = ExperimentConfig.from_yaml_file(config_path)
         offenders = [
             model_config

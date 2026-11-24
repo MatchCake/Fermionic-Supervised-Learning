@@ -49,6 +49,7 @@ from ..models.fermi_iqp_kernel_classifier import FermiIQPKernelClassifier
 from ..models.fermi_kitchen_sink_kernel_classifier import (
     FermiKitchenSinkKernelClassifier,
 )
+from ..models.fermi_pqc_kernel_classifier import FermiPQCKernelClassifier
 from ..models.fermi_vanilla_kernel_classifier import FermiVanillaKernelClassifier
 from ..models.fermi_vanilla_mpf_kernel_classifier import FermiVanillaMpfKernelClassifier
 from ..models.fermi_vanilla_mpf_plus_kernel_classifier import (
@@ -59,6 +60,7 @@ from ..models.fermi_vanilla_plus_kernel_classifier import (
 )
 from ..models.iqp_kernel_classifier import IQPKernelClassifier
 from ..models.kitchen_sink_kernel_classifier import KitchenSinkKernelClassifier
+from ..models.pqc_kernel_classifier import PQCKernelClassifier
 from ..utils.threading_config import configure_threads, thread_report
 from .configs.single_experiment_config import SingleExperimentConfig
 
@@ -81,6 +83,8 @@ class SingleExperiment:
         FermiAngleMpfKernelClassifier,
         KitchenSinkKernelClassifier,
         FermiKitchenSinkKernelClassifier,
+        PQCKernelClassifier,
+        FermiPQCKernelClassifier,
     ]
     SCRIPT = "single_exp"
     BASE_RANDOM_STATE = 0

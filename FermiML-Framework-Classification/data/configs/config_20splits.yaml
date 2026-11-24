@@ -1,0 +1,234 @@
+datasets:
+  cv-splits: 20
+  datasets:
+  - extra-options: {}
+    hyperparameters:
+      image_size: [4]
+    name: bars-and-stripes
+  - extra-options: {}
+    hyperparameters:
+      dimensions: [2, 6, 10, 20]
+    name: hidden-manifold
+  - extra-options: {}
+    hyperparameters:
+      n_manifolds: [4, 6, 10, 14]
+    name: hidden-manifold-diff
+  - extra-options: {}
+    hyperparameters:
+      dimension: [10, 15, 20]
+    name: linearly-separable
+  - extra-options: {}
+    hyperparameters:
+      dimension: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    name: downscaled-mnist
+  splits-seed: 0
+  val-size: 0.1
+experiment-name: kernel_cls_benchmark_20splits
+models:
+- extra-options: {}
+  hyperparameters:
+    repeats: [1]
+    svm_c: [0.1, 1, 10, 100]
+  name: IQP
+  slurm-resources:
+    mem_mb: 32768
+    runtime_min: 720
+- extra-options: {}
+  hyperparameters:
+    repeats: [1, 5, 10]
+    svm_c: [0.1, 1, 100]
+  name: fIQP
+  slurm-resources:
+    mem_mb: 65536
+    runtime_min: 180
+- extra-options: {}
+  hyperparameters:
+    n_episodes: [500]
+    n_qfeatures: [full, half]
+  name: QKS
+  slurm-resources:
+    mem_mb: 65536
+    runtime_min: 4320
+- extra-options: {}
+  hyperparameters:
+    n_episodes: [2000]
+    n_qfeatures: [half]
+  name: QKS
+  slurm-resources:
+    mem_mb: 65536
+    runtime_min: 1440
+- extra-options: {}
+  hyperparameters:
+    n_episodes: [2000]
+    n_qfeatures: [full]
+  name: QKS
+  slurm-resources:
+    mem_mb: 65536
+    runtime_min: 10080
+- extra-options: {}
+  hyperparameters:
+    n_episodes: [100, 500]
+    n_qfeatures: [full, half]
+  name: fQKS
+  slurm-resources:
+    mem_mb: 65536
+    runtime_min: 1440
+- extra-options: {}
+  hyperparameters:
+    n_episodes: [2000]
+    n_qfeatures: [full, half]
+  name: fQKS
+  slurm-resources:
+    mem_mb: 65536
+    runtime_min: 4320
+- extra-options: {}
+  hyperparameters:
+    observable_norm: ["2^n"]
+    n_qubits: [-1]
+    sector_m: [2, 4]
+    svm_c: [1, 10, 100]
+  name: VanillaMpf
+  slurm-resources:
+    mem_mb: 131072
+    runtime_min: 480
+- extra-options: {}
+  hyperparameters:
+    observable_norm: ["2^n"]
+    n_qubits: [-1]
+    sectors:
+    - [2, 3]
+    svm_c: [0.1, 1, 10, 100]
+  name: VanillaMpf+
+  slurm-resources:
+    mem_mb: 65536
+    runtime_min: 480
+- extra-options: {}
+  hyperparameters:
+    repeats: [5, 10]
+    svm_c: [0.1, 1, 10, 100]
+  name: IQP
+  slurm-resources:
+    mem_mb: 32768
+    runtime_min: 1440
+- extra-options: {}
+  hyperparameters:
+    repeats: [1, 5, 10]
+    svm_c: [10]
+  name: fIQP
+  slurm-resources:
+    mem_mb: 65536
+    runtime_min: 180
+- extra-options: {}
+  hyperparameters:
+    n_episodes: [10]
+    n_qfeatures: [full, half]
+  name: QKS
+  slurm-resources:
+    mem_mb: 65536
+    runtime_min: 180
+- extra-options: {}
+  hyperparameters:
+    n_episodes: [100]
+    n_qfeatures: [half]
+  name: QKS
+  slurm-resources:
+    mem_mb: 65536
+    runtime_min: 180
+- extra-options: {}
+  hyperparameters:
+    n_episodes: [100]
+    n_qfeatures: [full]
+  name: QKS
+  slurm-resources:
+    mem_mb: 65536
+    runtime_min: 1440
+- extra-options: {}
+  hyperparameters:
+    n_episodes: [10]
+    n_qfeatures: [full, half]
+  name: fQKS
+  slurm-resources:
+    mem_mb: 65536
+    runtime_min: 180
+- extra-options: {}
+  hyperparameters:
+    observable_norm: ["2^n"]
+    n_qubits: [-1]
+    sector_m: [2]
+    svm_c: [0.1]
+  name: VanillaMpf
+  slurm-resources:
+    mem_mb: 131072
+    runtime_min: 180
+- extra-options: {}
+  hyperparameters:
+    observable_norm: ["2^n"]
+    n_qubits: [-1]
+    sector_m: [4]
+    svm_c: [0.1]
+  name: VanillaMpf
+  slurm-resources:
+    mem_mb: 131072
+    runtime_min: 480
+- extra-options: {}
+  hyperparameters:
+    observable_norm: ["2^n"]
+    n_qubits: [32, 64]
+    sector_m: [2]
+    svm_c: [0.1, 1, 10, 100]
+  name: VanillaMpf
+  slurm-resources:
+    mem_mb: 131072
+    runtime_min: 180
+- extra-options: {}
+  hyperparameters:
+    observable_norm: ["2^n"]
+    n_qubits: [-1, 32, 64]
+    sector_m: [2]
+    svm_c: [0.1, 1, 10, 100]
+  name: VanillaMpf+
+  slurm-resources:
+    mem_mb: 131072
+    runtime_min: 180
+- extra-options: {}
+  hyperparameters:
+    n_qubits: [-1, 32]
+    svm_c: [0.1, 1, 10, 100]
+  name: Vanilla
+  slurm-resources:
+    mem_mb: 131072
+    runtime_min: 180
+- extra-options: {}
+  hyperparameters:
+    observable_norm: ["2^n"]
+    n_qubits: [-1]
+    sector_m: [2]
+    svm_c: [0.1, 1, 10, 100]
+  name: AngleMpf
+  slurm-resources:
+    mem_mb: 131072
+    runtime_min: 180
+- extra-options: {}
+  hyperparameters:
+    n_qubits: [full, half, quarter, eighth]
+    svm_c: [0.1, 1, 10, 100]
+  name: PQC
+  slurm-resources:
+    mem_mb: 32768
+    runtime_min: 180
+- extra-options: {}
+  hyperparameters:
+    n_qubits: [full, half, quarter, eighth]
+    svm_c: [0.1, 1, 10, 100]
+  name: fPQC
+  slurm-resources:
+    mem_mb: 65536
+    runtime_min: 180
+- extra-options: {}
+  hyperparameters:
+    n_qubits: [double]
+    svm_c: [0.1, 1, 10, 100]
+  name: fPQC
+  slurm-resources:
+    mem_mb: 65536
+    runtime_min: 480
